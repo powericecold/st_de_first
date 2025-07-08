@@ -44,13 +44,14 @@ FROM
 (
     SELECT
         user_id,
-        toDate(event_time) AS event_date,
-        min(event_time) OVER (PARTITION BY user_id ORDER BY event_time ASC ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) AS next_event
-    FROM user_events
-    WHERE event_type = 'login'
+        event_date,
+        NULLIF(min(event_date) OVER (PARTITION BY user_id 
+        	ORDER BY event_date ASC ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING), '1970-01-01') AS next_event
+    FROM (SELECT user_id, toDate(event_time) AS event_date FROM user_events GROUP BY user_id, toDate(event_time))
 )
 GROUP BY event_date
 ORDER BY event_date;
+
 
 -- 5. Запрос для быстрой аналитики с использованием агрегированной таблицы
 SELECT
