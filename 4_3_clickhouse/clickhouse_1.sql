@@ -52,6 +52,22 @@ FROM
 GROUP BY event_date
 ORDER BY event_date;
 
+-- 4. Запрос для расчета Retention
+SELECT
+    event_date AS day_0,
+    uniq(user_id) AS total_users_day_0,
+    countIf(next_event BETWEEN event_date + INTERVAL 1 DAY AND event_date + INTERVAL 7 DAY) AS returned_in_7_days,
+    round(returned_in_7_days / total_users_day_0 * 100, 2) AS retention_7d_percent
+FROM
+(
+    SELECT
+        user_id,
+        toDate(event_time) AS event_date,
+        NULLIF(lead(toDate(event_time)) OVER (PARTITION BY user_id ORDER BY event_time ASC), '1970-01-01') AS next_event
+    FROM user_events
+)
+GROUP BY event_date
+ORDER BY event_date;
 
 -- 5. Запрос для быстрой аналитики с использованием агрегированной таблицы
 SELECT
